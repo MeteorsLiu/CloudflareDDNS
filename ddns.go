@@ -112,9 +112,8 @@ func main() {
 		IP := DDNS.GetCFIP()
 		for {
 			select {
-			case <-ticker.C:
+			case ip = <-ipChan:
 				//Block Until the other side is ready
-				ip = <-ipChan
 				if ip != IP {
 					log.Printf("IP has been changed to %s", ip)
 					IP = ip
