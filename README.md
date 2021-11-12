@@ -5,6 +5,22 @@ A Cross-platform DDNS software for Cloudflare
 
 
 # 中文文档
+
+二进制文件自行翻release，已经上传
+目前兼容平台：
+Apple M1(Darwin ARM64)
+
+MacOS(Darwin)
+
+Linux ARM64
+
+Linux AMD64
+
+Linux MIPS64
+
+Windows AMD64
+
+
 使用方法：
 
 ./ddns -key xxxxx -email xxxx -domain xx.xx.com -hook xxxx -time 1
