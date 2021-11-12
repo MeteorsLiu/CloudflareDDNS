@@ -25,7 +25,6 @@ var (
 	ctx          = context.Background()
 	cfdomain     = flag.String("domain", "", "DDNS Domain")
 	DefaultQuery = "http://whatismyip.akamai.com/"
-	IP           = ""
 )
 
 func SplitFQDN(domain string) string {
@@ -99,7 +98,6 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	ticker := time.NewTicker(time.Duration(*waitTime) * time.Second)
 	DDNS := &DDNS{api: api, FQDN: FQDN}
-	IP = DDNS.GetCFIP()
 	var wg sync.WaitGroup
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -111,6 +109,7 @@ func main() {
 		defer wg.Done()
 		//Avoid declaring vars repeatedly.
 		var ip string
+		IP := DDNS.GetCFIP()
 		for {
 			select {
 			case <-ticker.C:
