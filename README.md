@@ -8,6 +8,7 @@ A Cross-platform DDNS software for Cloudflare
 
 二进制文件自行翻release，已经上传
 目前兼容平台：
+
 Apple M1(Darwin ARM64)
 
 MacOS(Darwin)
