@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -80,6 +79,24 @@ func (d *DDNS) UpdateCFIP(ip string) {
 
 }
 
+func DoGETTimeout(URL string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequest("GET", URL, nil)
+	if err != nil {
+		return "", err
+	}
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	return string(body), nil
+
+}
+
 func main() {
 	flag.Parse()
 
@@ -93,65 +110,35 @@ func main() {
 		log.Fatal(err)
 	}
 	FQDN := cloudflare.DNSRecord{Name: *cfdomain, ZoneID: id}
-	ipChan := make(chan string)
-	quit := make(chan struct{})
 	sigCh := make(chan os.Signal, 1)
 	ticker := time.NewTicker(time.Duration(*waitTime) * time.Second)
 	DDNS := &DDNS{api: api, FQDN: FQDN}
-	var wg sync.WaitGroup
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	defer ticker.Stop()
 
-	//Make sure that Goroutine exits successfully
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		//Avoid declaring vars repeatedly.
-		var ip string
-		IP := DDNS.GetCFIP()
-		for {
-			select {
-			case ip = <-ipChan:
-				//Block Until the other side is ready
-				if ip != IP {
-					log.Printf("IP has been changed to %s", ip)
-					IP = ip
-					if *hook != "" {
-						ExecShell(*hook)
-					}
-					DDNS.UpdateCFIP(ip)
-				}
-			case <-quit:
-				log.Println("Goroutine Exit")
-				return
+	var ip string
+	IP := DDNS.GetCFIP()
+	for {
+		select {
+		case <-ticker.C:
+			ip, err = DoGETTimeout(DefaultQuery)
+			if err != nil {
+				log.Printf("%v", err)
+				continue
 			}
-		}
-
-	}()
-
-	CFunc := func() {
-		defer close(ipChan)
-		defer close(quit)
-		var resp *http.Response
-		for {
-			select {
-			case <-ticker.C:
-				resp, err = http.Get(DefaultQuery)
-				if err != nil {
-					log.Fatal(err)
+			if ip != IP {
+				log.Printf("IP has been changed to %s", ip)
+				IP = ip
+				if *hook != "" {
+					ExecShell(*hook)
 				}
-				body, _ := io.ReadAll(resp.Body)
-				ipChan <- string(body)
-			case <-sigCh:
-				resp.Body.Close()
-				log.Println("Main Exit")
-				return
+				DDNS.UpdateCFIP(ip)
 			}
+		case <-sigCh:
+			log.Println("Goroutine Exit")
+			return
 		}
-
 	}
-	CFunc()
-	wg.Wait()
 
 }
