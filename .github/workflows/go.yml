@@ -23,9 +23,9 @@ jobs:
     - name: Create binary dir
       run: mkdir bin
     - name: Build China
-      run: cd china && go mod tidy && go build . -o ../bin && cd ..
+      run: cd china && go mod tidy && go build .  && mv china ../bin
     - name: Build
-      run: go mod tidy && go build . && -o bin
+      run: go mod tidy && go build . && mv CloudflareDDNS bin
       
     - name: Upload Release
       uses: softprops/action-gh-release@v1
