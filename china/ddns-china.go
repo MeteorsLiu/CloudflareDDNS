@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"io"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -20,13 +20,16 @@ import (
 var (
 	cfkey        = flag.String("key", "", "CF Key")
 	cfemail      = flag.String("email", "", "CF Email")
-	waitTime     = flag.Int("time", 10, "Wait Time (Second).Default 1 Second")
+	waitTime     = flag.Int("time", 8, "Wait Time (Second).Default 1 Second")
 	hook         = flag.String("hook", "", "Bash shell to execute when ip has been changed")
 	ctx          = context.Background()
 	cfdomain     = flag.String("domain", "", "DDNS Domain")
-	DefaultQuery = "http://myip.ipip.net"
-	rep          = regexp.MustCompile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`)
+	DefaultQuery = "http://myip.ipip.net/ip"
 )
+
+type IPIP struct {
+	IP string `json:"ip"`
+}
 
 func SplitFQDN(domain string) string {
 	DomainSlice := strings.Split(domain, ".")
@@ -82,19 +85,21 @@ func (d *DDNS) UpdateCFIP(ip string) {
 }
 
 func DoGETTimeout(URL string) (string, error) {
-	_ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	_ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	req, err := http.NewRequest("GET", URL, nil)
+	req, err := http.NewRequestWithContext(_ctx, "GET", URL, nil)
 	if err != nil {
 		return "", err
 	}
-	res, err := http.DefaultClient.Do(req.WithContext(_ctx))
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
-	return string(rep.Find(body)), nil
+	var ret IPIP
+	json.Unmarshal(body, &ret)
+	return ret.IP, nil
 
 }
 
