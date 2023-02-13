@@ -23,9 +23,9 @@ jobs:
     - name: Create binary dir
       run: mkdir bin
     - name: Build China
-      run: cd china && go mod tidy && go build . -o ../bin/china && cd ..
+      run: cd china && go mod tidy && go build . -o ../bin && cd ..
     - name: Build
-      run: go mod tidy && go build . && -o bin/general
+      run: go mod tidy && go build . && -o bin
       
     - name: Upload Release
       uses: softprops/action-gh-release@v1
