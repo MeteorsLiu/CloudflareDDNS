@@ -23,7 +23,7 @@ jobs:
     - name: Build China
       run: cd china && go mod tidy && go build .
     - name: Build
-      run: go mod tidy && go build main.go
+      run: go mod tidy && go build .
       
     - name: Create Release
       id: create_release
