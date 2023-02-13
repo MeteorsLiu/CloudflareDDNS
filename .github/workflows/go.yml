@@ -20,12 +20,10 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.19
-    - name: Install dependencies
-      run: go get .
     - name: Build China
-      run: cd china && go build .
+      run: cd china && go mod tidy && go build .
     - name: Build
-      run: go build main.go
+      run: go mod tidy && go build main.go
       
     - name: Create Release
       id: create_release
