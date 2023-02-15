@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"log"
@@ -99,6 +100,9 @@ func DoGETTimeout(URL string) (string, error) {
 	body, _ := io.ReadAll(res.Body)
 	var ret IPIP
 	json.Unmarshal(body, &ret)
+	if ret.IP == "" {
+		return "", errors.New("cannot get the outer ip")
+	}
 	return ret.IP, nil
 
 }
