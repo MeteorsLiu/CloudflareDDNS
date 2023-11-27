@@ -5,6 +5,8 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/MeteorsLiu/CloudflareDDNS/ddns"
@@ -59,9 +61,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	sigCh := make(chan os.Signal, 1)
-	getter := parseGetter(ctx)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
 	DDNS := ddns.NewDDNS(
-		ctx, cancel, getter,
+		ctx, cancel,
+		parseGetter(ctx),
 		*waitTime, *cfkey,
 		*cfemail, *cfdomain,
 		*hook,
