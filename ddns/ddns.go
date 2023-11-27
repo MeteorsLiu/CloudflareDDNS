@@ -2,6 +2,7 @@ package ddns
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +20,8 @@ type DDNS struct {
 	waitTime time.Duration
 	doStop   context.CancelFunc
 	FQDN     cloudflare.DNSRecord
+	logger   *log.Logger
+	verbose  bool
 	RecordID string
 	shell    string
 }
@@ -35,7 +38,8 @@ func splitFQDN(domain string) string {
 
 func NewDDNS(
 	ctx context.Context, stop context.CancelFunc,
-	getter ip.Getter, wait int,
+	getter ip.Getter,
+	verbose bool, wait int,
 	key, email, domain,
 	shell string,
 ) *DDNS {
@@ -52,20 +56,34 @@ func NewDDNS(
 		api:      api,
 		FQDN:     FQDN,
 		ctx:      ctx,
-		getter:   getter,
 		doStop:   stop,
+		getter:   getter,
+		verbose:  verbose,
 		waitTime: time.Duration(wait) * time.Second,
+		logger:   log.New(os.Stderr, "", log.Lshortfile|log.LstdFlags),
 	}
 	return d
+}
+
+func (d *DDNS) Println(s string) {
+	if d.verbose {
+		d.logger.Output(2, s)
+	}
+}
+
+func (d *DDNS) Printf(f string, s ...any) {
+	if d.verbose {
+		d.logger.Output(2, fmt.Sprintf(f, s...))
+	}
 }
 
 func (d *DDNS) execShell() {
 	if d.shell != "" {
 		err := exec.Command("bash", "-c", d.shell).Run()
 		if err != nil {
-			log.Printf("Execute Hook Failed")
+			d.Println("Execute Hook Failed")
 		} else {
-			log.Printf("Execute Hook Success")
+			d.Println("Execute Hook Success")
 		}
 	}
 }
@@ -98,21 +116,28 @@ func (d *DDNS) updateCFIP(ip string) {
 
 func (d *DDNS) Run(ch chan os.Signal) {
 	ip := d.getCFIP()
+
+	update := func() {
+		current, err := d.getter.GetIP()
+		if err != nil {
+			d.Printf("GetIP: %v", err)
+			return
+		}
+		if ip != current {
+			ip = current
+			d.updateCFIP(current)
+			d.execShell()
+			d.Printf("IP has been changed to %s", current)
+		}
+	}
+	update()
+
 	ticker := time.NewTicker(d.waitTime)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			current, err := d.getter.GetIP()
-			if err != nil {
-				log.Println("GetIP: ", err)
-				continue
-			}
-			if ip != current {
-				ip = current
-				d.updateCFIP(current)
-				d.execShell()
-			}
+			update()
 		case <-ch:
 			d.doStop()
 			return

@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	verbose  = flag.Bool("v", true, "Verbose mode")
 	cfkey    = flag.String("key", "", "CF Key")
 	cfemail  = flag.String("email", "", "CF Email")
 	waitTime = flag.Int("time", 15, "Wait Time (Second).Default 15 Second")
@@ -66,9 +67,9 @@ func main() {
 	DDNS := ddns.NewDDNS(
 		ctx, cancel,
 		parseGetter(ctx),
-		*waitTime, *cfkey,
-		*cfemail, *cfdomain,
-		*hook,
+		*verbose, *waitTime,
+		*cfkey, *cfemail,
+		*cfdomain, *hook,
 	)
 	DDNS.Run(sigCh)
 }
