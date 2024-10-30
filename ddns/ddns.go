@@ -114,7 +114,7 @@ func (d *DDNS) updateCFIP(ip string) {
 	}
 }
 
-func (d *DDNS) Run(ch chan os.Signal) {
+func (d *DDNS) Run(ch chan os.Signal, once bool) {
 	ip := d.getCFIP()
 
 	update := func() {
@@ -131,6 +131,10 @@ func (d *DDNS) Run(ch chan os.Signal) {
 		}
 	}
 	update()
+
+	if once {
+		return
+	}
 
 	ticker := time.NewTicker(d.waitTime)
 	defer ticker.Stop()
