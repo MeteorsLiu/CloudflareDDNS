@@ -47,13 +47,14 @@ Cloudflare API Key
 ## domain
 指定的DDNS域名
 
-## dev
-指定interface口，仅在lan模式下生效
-
 例如
 `xxsad.123123.ghl.info`
 
 **务必要先在cloudflare里面添加该域名及前缀，否则无法运行，本程序不会主动帮你添加！！**
+
+## dev
+指定interface口，仅在lan模式下生效
+
 
 ## timeout
 查询当前IP超时时间(默认: 15秒)
